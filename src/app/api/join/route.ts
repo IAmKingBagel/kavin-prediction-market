@@ -15,15 +15,19 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabase();
 
-    const { data: existing, error: findError } = await supabase
+    // Case-insensitive match so "Arul" and "arul" hit the same profile
+    const { data: matches, error: findError } = await supabase
       .from("players")
       .select("*")
-      .eq("name", trimmed)
-      .maybeSingle();
+      .ilike("name", trimmed.replace(/%/g, "\\%").replace(/_/g, "\\_"));
 
     if (findError) {
       return NextResponse.json({ error: findError.message }, { status: 500 });
     }
+
+    const existing = (matches ?? []).find(
+      (p) => p.name.toLowerCase() === trimmed.toLowerCase()
+    );
 
     if (existing) {
       return NextResponse.json({ player: existing, created: false });
@@ -36,14 +40,15 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (createError) {
-      // Race: another request created the same name
       if (createError.code === "23505") {
         const { data: raced } = await supabase
           .from("players")
           .select("*")
-          .eq("name", trimmed)
-          .single();
-        return NextResponse.json({ player: raced, created: false });
+          .ilike("name", trimmed.replace(/%/g, "\\%").replace(/_/g, "\\_"));
+        const hit = (raced ?? []).find(
+          (p) => p.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        return NextResponse.json({ player: hit, created: false });
       }
       return NextResponse.json({ error: createError.message }, { status: 500 });
     }

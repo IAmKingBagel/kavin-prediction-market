@@ -33,12 +33,14 @@ export async function GET(req: NextRequest) {
     const markets = (colleges as College[]).map((college) => {
       const collegeBets = allBets.filter((b) => b.college_id === college.id);
       const odds = computeOdds(college, collegeBets);
-      const recent = collegeBets.slice(0, 4).map((b) => ({
+      const recentLimit = adminMode ? collegeBets.length : 4;
+      const recent = collegeBets.slice(0, recentLimit).map((b) => ({
         id: b.id,
         side: b.side,
         amount: b.amount,
         payout_rate: Number(b.payout_rate),
         created_at: b.created_at,
+        player_id: b.player_id,
         label: displayName(
           b.player_id,
           b.players?.name ?? "Unknown",

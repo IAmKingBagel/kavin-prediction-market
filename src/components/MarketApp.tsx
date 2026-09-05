@@ -10,6 +10,7 @@ type RecentBet = {
   payout_rate: number;
   created_at: string;
   label: string;
+  player_id?: string;
 };
 
 type Market = {
@@ -104,6 +105,52 @@ export function MarketApp({ player, onPlayerUpdate, onSignOut }: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.id, adminMode]);
+
+  async function removeBet(betId: string) {
+    if (!confirm("Remove this bet and refund the stake?")) return;
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/bets", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-pin": adminPin,
+        },
+        body: JSON.stringify({ betId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not remove bet");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not remove bet");
+    }
+  }
+
+  async function resetPlayer(playerId: string, label: string) {
+    if (
+      !confirm(
+        `Reset ${label}? Sets them to 100 points, clears their record, and removes all their bets on open markets (odds update).`
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/players/reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-pin": adminPin,
+        },
+        body: JSON.stringify({ playerId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not reset player");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not reset player");
+    }
+  }
 
   async function placeBet(collegeId: string, side: "yes" | "no") {
     const raw = amounts[collegeId] ?? "";
@@ -284,7 +331,7 @@ export function MarketApp({ player, onPlayerUpdate, onSignOut }: Props) {
               onClick={onSignOut}
               className="mt-2 text-xs text-zinc-500 underline"
             >
-              Switch player
+              Log out (use a different name)
             </button>
           </div>
         </header>
@@ -373,6 +420,9 @@ export function MarketApp({ player, onPlayerUpdate, onSignOut }: Props) {
                   <th className="px-3 py-2 font-medium">Player</th>
                   <th className="px-3 py-2 font-medium">Balance</th>
                   <th className="px-3 py-2 font-medium">Record</th>
+                  {adminMode && (
+                    <th className="px-3 py-2 font-medium">Admin</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -384,6 +434,17 @@ export function MarketApp({ player, onPlayerUpdate, onSignOut }: Props) {
                     <td className="px-3 py-2 font-medium">{row.label}</td>
                     <td className="px-3 py-2 tabular-nums">{row.balance}</td>
                     <td className="px-3 py-2 tabular-nums">{row.record}</td>
+                    {adminMode && (
+                      <td className="px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => resetPlayer(row.id, row.label)}
+                          className="text-xs text-rose-800 underline"
+                        >
+                          Reset
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -462,12 +523,26 @@ export function MarketApp({ player, onPlayerUpdate, onSignOut }: Props) {
                   {recent.length > 0 && (
                     <ul className="text-xs text-zinc-600 space-y-1 border-t border-zinc-200 pt-2">
                       {recent.map((b) => (
-                        <li key={b.id}>
-                          <span className="font-medium text-zinc-800">
-                            {b.label}
-                          </span>{" "}
-                          bet {b.amount} on {b.side} (locks +
-                          {Math.round(Number(b.payout_rate) * 100)}%)
+                        <li
+                          key={b.id}
+                          className="flex flex-wrap items-center justify-between gap-2"
+                        >
+                          <span>
+                            <span className="font-medium text-zinc-800">
+                              {b.label}
+                            </span>{" "}
+                            bet {b.amount} on {b.side} (locks +
+                            {Math.round(Number(b.payout_rate) * 100)}%)
+                          </span>
+                          {adminMode && college.status === "open" && (
+                            <button
+                              type="button"
+                              onClick={() => removeBet(b.id)}
+                              className="text-rose-800 underline shrink-0"
+                            >
+                              Remove bet
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ul>

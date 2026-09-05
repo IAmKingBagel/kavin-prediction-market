@@ -23,10 +23,10 @@ export function JoinForm({ onJoined }: Props) {
         body: JSON.stringify({ name }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Join failed");
+      if (!res.ok) throw new Error(data.error || "Could not log in");
       onJoined(data.player);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Join failed");
+      setError(err instanceof Error ? err.message : "Could not log in");
     } finally {
       setLoading(false);
     }
@@ -43,10 +43,11 @@ export function JoinForm({ onJoined }: Props) {
             Admissions Market
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Who&apos;s betting?
+            Log in with your name
           </h1>
           <p className="text-zinc-600 text-sm leading-relaxed">
-            Type your name — no password. You start with 100 points.
+            No password. Use the same name as before to get back to your balance
+            and record. A new name creates a new player with 100 points.
           </p>
         </div>
         <input
@@ -57,6 +58,7 @@ export function JoinForm({ onJoined }: Props) {
           className="w-full border border-zinc-300 px-3 py-2.5 text-base outline-none focus:border-zinc-800"
           maxLength={40}
           required
+          autoComplete="username"
         />
         {error && <p className="text-sm text-red-700">{error}</p>}
         <button
@@ -64,7 +66,7 @@ export function JoinForm({ onJoined }: Props) {
           disabled={loading || !name.trim()}
           className="w-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50"
         >
-          {loading ? "Joining…" : "Enter the market"}
+          {loading ? "Loading…" : "Continue"}
         </button>
       </form>
     </main>

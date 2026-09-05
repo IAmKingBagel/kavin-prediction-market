@@ -651,9 +651,43 @@ export function MarketApp({ player, onPlayerUpdate, onSignOut }: Props) {
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-emerald-800">
-                Admin unlocked — real names shown. Resolve / edit controls are on
-                each open market.
+                Admin unlocked — real names shown. On each open school: resolve /
+                remove bets. On Leaderboard (or below): reset players.
               </p>
+
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Reset player
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  Sets them to 100 pts, clears record, removes their open-market
+                  bets (odds update).
+                </p>
+                <ul className="max-h-48 overflow-y-auto border border-zinc-300 bg-white divide-y divide-zinc-200 text-sm">
+                  {leaders.map((row) => (
+                    <li
+                      key={row.id}
+                      className="flex items-center justify-between gap-2 px-3 py-2"
+                    >
+                      <span>
+                        <span className="font-medium">{row.label}</span>
+                        <span className="text-zinc-500 tabular-nums">
+                          {" "}
+                          · {row.balance} pts · {row.record}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => resetPlayer(row.id, row.label)}
+                        className="text-xs text-rose-800 underline shrink-0"
+                      >
+                        Reset
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <form onSubmit={addCollege} className="flex flex-wrap gap-2 text-sm">
                 <input
                   placeholder="id (e.g. cornell)"
